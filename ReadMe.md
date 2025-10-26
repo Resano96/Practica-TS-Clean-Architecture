@@ -34,6 +34,17 @@ curl -X POST http://localhost:3000/orders/ORDER-001/items \
   -d '{ "sku": "SKU-ABC", "quantity": 1 }'
 ```
 
+- Levantar el servicio en desarrollo:
+```bash
+npm install
+npm run dev
+```
+
+- Ejecutar los tests:
+```bash
+npm test
+```
+
 ## Estructura de carpetas
 ```text
 src
