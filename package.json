@@ -1,0 +1,26 @@
+{
+  "name": "practica-ts-clean-architecture",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "fastify": "^4.28.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.12",
+    "eslint": "^9.0.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.15.7",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9",
+    "zod": "^3.23.8"
+  },
+  "author": "Ander Resano",
+  "license": "ISC"
+}
