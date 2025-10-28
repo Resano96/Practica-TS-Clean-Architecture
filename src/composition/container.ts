@@ -5,8 +5,16 @@ import { PricingService } from '../application/ports/PricingService';
 import { EventBus } from '../application/ports/EventBus';
 import { Clock } from '../application/ports/Clock';
 import { InMemoryOrderRepository } from '../infrastructure/persistence/in-memory/InMemoryOrderRepository';
+import { PostgresOrderRepository } from '../infrastructure/persistence/postgres/PostgresOrederRepository';
 import { StaticPricingService } from '../infrastructure/http/StaticPricingService';
 import { NoopEventBus } from '../infrastructure/messaging/NoopEventBus';
+import { Logger } from '../application/ports/Logger';
+import { PinoLogger } from '../infrastructure/logging/PinoLogger';
+import {
+  createPool,
+  closePool,
+} from '../infrastructure/database/DatabaseFactory';
+import type { Pool } from 'pg';
 
 class SystemClock implements Clock {
   now(): Date {
@@ -21,10 +29,29 @@ export interface Container {
   clock: Clock;
   createOrder: CreateOrder;
   addItemToOrder: AddItemToOrder;
+  logger: Logger;
+  shutdown: () => Promise<void>;
 }
 
 export const buildContainer = (): Container => {
-  const orderRepository = new InMemoryOrderRepository();
+  const logger = new PinoLogger();
+  const useInMemory =
+    (process.env.USE_INMEMORY ?? 'true').toLowerCase() === 'true';
+
+  let pool: Pool | null = null;
+
+  const orderRepository: OrderRepository = useInMemory
+    ? new InMemoryOrderRepository()
+    : (() => {
+        pool = createPool();
+        return new PostgresOrderRepository(pool);
+      })();
+  logger.info(
+    useInMemory
+      ? 'Using in-memory order repository'
+      : 'Using PostgreSQL order repository',
+  );
+
   const pricingService = new StaticPricingService({
     'SKU-ABC': { amount: 10, currency: 'USD' },
     'SKU-XYZ': { amount: 25, currency: 'USD' },
@@ -45,6 +72,14 @@ export const buildContainer = (): Container => {
     eventBus,
   );
 
+  const shutdown = async (): Promise<void> => {
+    if (pool) {
+      await closePool(pool);
+      pool = null;
+      logger.info('Database pool closed');
+    }
+  };
+
   return {
     orderRepository,
     pricingService,
@@ -52,5 +87,7 @@ export const buildContainer = (): Container => {
     clock,
     createOrder,
     addItemToOrder,
+    logger,
+    shutdown,
   };
 };
