@@ -1,0 +1,1 @@
+{"version":3,"file":"NoopEventBus.js","sourceRoot":"","sources":["../../../../src/infrastructure/messaging/NoopEventBus.ts"],"names":[],"mappings":"AAGA,MAAM,OAAO,YAAY;IACvB,KAAK,CAAC,OAAO,CAAC,MAAqB;QACjC,oEAAoE;QACpE,KAAK,MAAM,CAAC;IACd,CAAC;CACF"}

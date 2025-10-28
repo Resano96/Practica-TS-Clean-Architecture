@@ -4,7 +4,7 @@ export interface CreateOrderItemDTO {
 }
 
 export interface CreateOrderDTO {
-  orderId: string;
+  orderId?: string;
   customerId: string;
   items: CreateOrderItemDTO[];
 }

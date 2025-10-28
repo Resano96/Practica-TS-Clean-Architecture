@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Order } from '../../domain/entities/Order';
 import { OrderItem } from '../../domain/value-objects/OrderItem';
 import { Quantity } from '../../domain/value-objects/Quantity';
@@ -32,13 +33,22 @@ export class CreateOrder {
         return fail(validationError);
       }
 
-      const existing = await this.repository.findById(dto.orderId.trim());
-      if (existing) {
-        return fail(new ConflictError('Order already exists'));
+      const requestedOrderId = dto.orderId?.trim();
+      let orderId = requestedOrderId && requestedOrderId.length > 0
+        ? requestedOrderId
+        : await this.generateUniqueOrderId();
+
+      if (requestedOrderId) {
+        const existing = await this.repository.findById(orderId);
+        if (existing) {
+          return fail(new ConflictError('Order already exists'));
+        }
+      } else {
+        orderId = await this.ensureUnique(orderId);
       }
 
       const order = Order.create({
-        id: dto.orderId.trim(),
+        id: orderId,
         customerId: dto.customerId.trim(),
         createdAt: this.clock.now(),
       });
@@ -74,10 +84,6 @@ export class CreateOrder {
   }
 
   private validate(dto: CreateOrderDTO): ValidationError | null {
-    if (!dto.orderId || !dto.orderId.trim()) {
-      return new ValidationError('orderId is required');
-    }
-
     if (!dto.customerId || !dto.customerId.trim()) {
       return new ValidationError('customerId is required');
     }
@@ -99,5 +105,27 @@ export class CreateOrder {
     }
 
     return null;
+  }
+
+  private async generateUniqueOrderId(): Promise<string> {
+    return this.ensureUnique(this.generateCandidateId());
+  }
+
+  private generateCandidateId(): string {
+    return randomUUID();
+  }
+
+  private async ensureUnique(candidate: string): Promise<string> {
+    let orderId = candidate;
+
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const existing = await this.repository.findById(orderId);
+      if (!existing) {
+        return orderId;
+      }
+      orderId = this.generateCandidateId();
+    }
+
+    throw new ConflictError('Unable to generate a unique order id');
   }
 }
